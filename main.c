@@ -1,3 +1,6 @@
+// Created by Andrei Vasilescu
+// Faculty of Automatic Control and Computer Science, Romania
+
 #include <curses.h>
 #include <stdio.h>
 #include <ctype.h>
