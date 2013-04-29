@@ -4,6 +4,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <curses.h>
+#include <stdio.h>
+#include <ctype.h>
+#include <string.h>
+#include <stdlib.h>
+#include <time.h>
 
 
 // This function shows the top 5 players
@@ -22,7 +28,7 @@ int great_wall( WINDOW* wnd )
     attroff( COLOR_PAIR(3) );
     mvaddstr( 3, 10, "Top 5" );
     int i = 0;
-    FILE* scores = fopen( "scores", "r" );
+    FILE* scores = fopen( "scores", "a+" );
     int old_max = 10000;
     char maxc[5];
     char BUFF[16];
@@ -102,11 +108,11 @@ int save( int board[6][7], char nume_jucatori[2][12], int joc[3], int culori[2],
     strcat( file_name, "_vs_" );
     strcat( file_name, nume_jucatori[1] );
     save_game = fopen( file_name, "wb" );
-    fwrite ( &board[0][0], sizeof(int), 6 * 7, save_game );
-    fwrite ( &nume_jucatori[0][0], sizeof(char), 2 * 12, save_game );
-    fwrite ( &joc[0], sizeof(int), 3, save_game );
-    fwrite ( &culori[0], sizeof(int), 2, save_game );
-    fwrite ( &player, sizeof(int), 1, save_game );
+    fwrite( &board[0][0], sizeof(int), 6*7, save_game );
+    fwrite( &nume_jucatori[0][0], sizeof(char), 2 * 12, save_game );
+    fwrite( &joc[0], sizeof(int), 3, save_game );
+    fwrite( &culori[0], sizeof(int), 2, save_game );
+    fwrite( &player, sizeof(int), 1, save_game );
     fclose( save_game );
     FILE* saved_games;
     saved_games = fopen( "saved_games", "a+" );
@@ -119,20 +125,20 @@ int save( int board[6][7], char nume_jucatori[2][12], int joc[3], int culori[2],
         count++;
     }
     fclose( saved_games );
-    if ( j == 0 )
+    if (j == 0)
     {
         if ( count >= 10 )
         {
             saved_games = fopen( "saved_games", "r" );
             char games[10][25];
             int i = 0;
-            for (i = 0; i < 10; i++)
+            for ( i = 0; i < 10; i++ )
             {
                 fgets( games[i], 25, saved_games );
             }
             fclose( saved_games );
             remove( "saved_games" );
-            saved_games = fopen( "saved_games", "w" );
+            saved_games=fopen( "saved_games","w" );
             for ( i = 1; i < 10; i++ )
             {
                 fprintf( saved_games, "%s", games[i] );
@@ -690,8 +696,9 @@ int alege_culori( WINDOW* wnd, int *culori, int tp, char* juc_1, char* juc_2 )
     wbkgd( wnd, COLOR_PAIR(3) );
     attron( COLOR_PAIR(2) );
     attron( A_BOLD );
-    mvaddstr( 2, ((nr_col / 2) - 13), "Start a new game" );
-    mvaddstr( 2, ((nr_col / 2) + 5), tip);
+    mvaddstr( 2, ((nr_col / 2) - 13), "Start a new");
+    mvaddstr( 2, ((nr_col / 2) - 1), tip);
+    mvaddstr( 2, ((nr_col / 2) - 1 + strlen(tip)), " game" );
     attroff( A_BOLD );
     attroff( COLOR_PAIR(2) );
     mvaddstr( 6, 2, "Select the colours and names you want to play with" );
@@ -1043,8 +1050,8 @@ int game_won (WINDOW* wnd)
     wnd=initscr();
     start_color();
     char strings[2][17];
-    strcpy(strings[0],"Next round");
-    strcpy(strings[1],"End game");
+    strcpy(strings[0],"Runda urmatoare");
+    strcpy(strings[1],"Opreste jocul");
     init_pair(3,COLOR_BLACK,COLOR_WHITE);
     init_pair(2,COLOR_RED,COLOR_WHITE);
     init_pair(31,COLOR_GREEN,COLOR_BLACK);
@@ -1136,7 +1143,6 @@ int game_won (WINDOW* wnd)
     }
 }
 
-
 //This is where all the fun happens
 int game(int cond, int game_type)
 {
@@ -1192,7 +1198,7 @@ int game(int cond, int game_type)
             mvaddstr(21,5,"Press ENTER to load selected game");
             mvaddstr(22,5,"Press D to delete selected game");
             mvaddstr(23,5,"Press Q to go back");
-            attroff(COLOR_PAIR(31));
+             attroff(COLOR_PAIR(31));
             nodelay(wnd,FALSE);
             if (i!=0)
             {
@@ -1449,12 +1455,13 @@ int game(int cond, int game_type)
     time_t pause_time=0;
     while(c==5)
     {
+        nodelay(wnd,TRUE);
         current_time=time(NULL);
         mvaddstr(3,52,"Time:");
         ora_hr = localtime(&current_time);
         sprintf(ora_crr,"%02d:%02d", ora_hr->tm_hour, ora_hr->tm_min);
         ora_crr[5]=0;
-        mvaddstr(3,57,ora_crr);
+        mvaddstr(3,59,ora_crr);
         mvaddstr(4,52, "You have been playing for:");
         time_t playtime=current_time-start_time-pause_time;
         chron = localtime(&playtime);
@@ -1753,8 +1760,9 @@ int game(int cond, int game_type)
                         ln=1;
                         c=check_winner(pos/5,board,&win_l, &win_c, &player);
                     }
-                        if ((c!=5)&&(c!=0))
+                    if ((c!=5)&&(c!=0))
                             {
+                            time_t win_st_time=time(NULL);
                             show_winner(wnd,win_l,win_c,c,culori[(player-1)%2]+10,player%2, nume_jucatori[(player-1)%2]);
                             refresh();
                             joc[0]++;
@@ -1863,12 +1871,14 @@ int game(int cond, int game_type)
                             mvaddstr(1,2,"    ");
                             mvaddstr(2,2,"    ");
                             attroff(COLOR_PAIR(culori[player%2]+10));
+                            pause_time=pause_time + (time(NULL)-win_st_time);
                             refresh();
                         }
                     else
                     {
                         if (c==0)
                         {
+                            time_t rem_time=time(NULL);
                             attron(A_BOLD);
                             attron(COLOR_PAIR(2));
                             mvaddstr(14,52, "DRAW!");
@@ -1885,15 +1895,17 @@ int game(int cond, int game_type)
                             mvaddstr(1,2,"    ");
                             mvaddstr(2,2,"    ");
                             attroff(COLOR_PAIR(culori[player%2]+10));
+                            pause_time=pause_time+(time(NULL)-rem_time);
                             refresh();
                         }
                     }
                     break;
                 case 'p':
                     pauza(&pause_time);
-                    mvaddstr(22,52,"To pause the game press P");
-                    mvaddstr(21,52,"To save the game press S");
-                    mvaddstr(23,52,"To quit the game press Q");
+                    mvaddstr(22,52,"To pause the game press P    ");
+                    mvaddstr(21,52,"To save the game press S     ");
+                    mvaddstr(23,52,"To quit the game press Q     ");
+                    nodelay(wnd,TRUE);
                     break;
             }
         }
@@ -1995,7 +2007,7 @@ int new_game(int load)
     return 0;
 }
 
-//Shows a few game rules
+//meniu in care sunt afisate cateva reguli ale jocului
 int rules()
 {
     char menu_strings[6][22];
@@ -2023,11 +2035,11 @@ int rules()
     attroff(COLOR_PAIR(2));
     attroff(A_BOLD);
     mvaddstr(4,3,"Connect 4 is a logic and strategy game meant for 2 players.");
-    mvaddstr(5,3,"Each player will try to arrange for of his coins in a row, column or diagonally.");
-    mvaddstr(6,3,"Before the game starts the two players can select their desired names and the colours");
-    mvaddstr(7,3,"they want to play with. Also, there are two game modes available: classic, where the");
-    mvaddstr(8,3,"players can enter coins from the top of their bord; pop-out, where they are allowed to");
-    mvaddstr(9,3,"extract coins from the bottom.");
+    mvaddstr(5,3,"Each player will try to arrange for of his coins in a row, column or");
+    mvaddstr(6,3,"diagonally. Before the game starts the two players can select their desired");
+    mvaddstr(7,3,"names and the colours they want to play with. Also, there are two game");
+    mvaddstr(8,3,"modes available: classic, where the players can enter coins from the top;");
+    mvaddstr(9,3,"pop-out, where they are allowed to extract coins from the bottom.");
     mvaddstr(13,3,"How to play:");
     mvaddstr(14,19,"Move coin to the left");
     mvaddstr(15,19,"Move coin to the right");
@@ -2135,7 +2147,7 @@ int main_menu(int rnd)
                     case 7:
                         new_game(1);return 0;
                     case 8:
-                        rules();return 0;
+                        rules();return 0;;
                     case 9:
                         great_wall(wnd);return 0;
                     case 10:
@@ -2149,6 +2161,7 @@ int main_menu(int rnd)
     return 0;
 }
 
+//functia main
 int main (void)
 {
 
